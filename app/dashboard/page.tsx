@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
-import { getUserPosts } from '@/app/actions/posts'
+import { getMyPosts } from '@/app/actions/posts'
 import { PostCard } from '@/components/PostCard'
-import { formatDistanceToNow } from 'date-fns'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -13,7 +12,7 @@ export default async function DashboardPage() {
     redirect('/auth/signin')
   }
 
-  const { posts } = await getUserPosts(user.id)
+  const posts = await getMyPosts()
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">

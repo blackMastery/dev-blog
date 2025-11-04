@@ -18,7 +18,7 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
     redirect('/auth/signin')
   }
 
-  const { post } = await getPostBySlug(slug, user.id)
+  const post = await getPostBySlug(slug)
   if (!post) {
     notFound()
   }

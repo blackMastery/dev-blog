@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { createPost, updatePost } from '@/app/actions/posts'
 import { uploadImage } from '@/app/actions/upload'
+import { createTag } from '@/app/actions/tags'
 import type { Post, Category, Tag } from '@/types/database'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), {
@@ -14,7 +15,7 @@ const MDEditor = dynamic(() => import('@uiw/react-md-editor'), {
 
 export function PostForm({
   categories,
-  tags,
+  tags: initialTags,
   post,
 }: {
   categories: Category[]
@@ -37,8 +38,13 @@ export function PostForm({
   )
   const [published, setPublished] = useState(post?.published || false)
   const [isDark, setIsDark] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [tags, setTags] = useState<Tag[]>(initialTags)
+  const [newTagName, setNewTagName] = useState('')
+  const [isCreatingTag, setIsCreatingTag] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const checkDarkMode = () => {
       setIsDark(document.documentElement.classList.contains('dark') || 
                 window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -84,6 +90,43 @@ export function PostForm({
         ? prev.filter(id => id !== tagId)
         : [...prev, tagId]
     )
+  }
+
+  const handleCreateTag = async () => {
+    const tagName = newTagName.trim()
+    if (!tagName || isCreatingTag) return
+
+    setIsCreatingTag(true)
+    const result = await createTag(tagName)
+    setIsCreatingTag(false)
+
+    if (result.error) {
+      alert(result.error)
+      return
+    }
+
+    if (result.data) {
+      // Check if tag already exists in the list
+      const tagExists = tags.some(t => t.id === result.data.id || t.name.toLowerCase() === tagName.toLowerCase())
+      
+      if (!tagExists) {
+        setTags(prev => [...prev, result.data].sort((a, b) => a.name.localeCompare(b.name)))
+      }
+      
+      // Automatically select the newly created tag
+      if (!selectedTags.includes(result.data.id)) {
+        setSelectedTags(prev => [...prev, result.data.id])
+      }
+      
+      setNewTagName('')
+    }
+  }
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleCreateTag()
+    }
   }
 
   const handleBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,13 +215,13 @@ export function PostForm({
         <label htmlFor="content" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
           Content (Markdown)
         </label>
-        <div className="w-full" data-color-mode={isDark ? 'dark' : 'light'}>
+        <div className="w-full" data-color-mode={mounted && isDark ? 'dark' : 'light'}>
           <MDEditor
             value={content}
             onChange={(value) => setContent(value || '')}
             preview="edit"
             visibleDragbar={false}
-            height={400}
+            height={600}
             textareaProps={{
               placeholder: 'Write your post content in Markdown',
               required: true,
@@ -289,7 +332,7 @@ export function PostForm({
         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
           Tags
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mb-3">
           {tags.map((tag) => (
             <button
               key={tag.id}
@@ -304,6 +347,25 @@ export function PostForm({
               {tag.name}
             </button>
           ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newTagName}
+            onChange={(e) => setNewTagName(e.target.value)}
+            onKeyDown={handleTagInputKeyDown}
+            placeholder="Add new tag"
+            className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-black placeholder-zinc-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
+            disabled={isCreatingTag}
+          />
+          <button
+            type="button"
+            onClick={handleCreateTag}
+            disabled={!newTagName.trim() || isCreatingTag}
+            className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-50 dark:text-black dark:hover:bg-zinc-200"
+          >
+            {isCreatingTag ? 'Adding...' : 'Add Tag'}
+          </button>
         </div>
       </div>
 
