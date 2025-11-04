@@ -4,7 +4,13 @@ import { useState, useTransition } from 'react'
 import { createComment } from '@/app/actions/blog'
 import { useRouter } from 'next/navigation'
 
-export function CommentForm({ postId }: { postId: string }) {
+interface CommentFormProps {
+  postId: string
+  parentId?: string | null
+  onSuccess?: () => void
+}
+
+export function CommentForm({ postId, parentId = null, onSuccess }: CommentFormProps) {
   const [content, setContent] = useState('')
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -14,9 +20,10 @@ export function CommentForm({ postId }: { postId: string }) {
     if (!content.trim()) return
 
     startTransition(async () => {
-      const result = await createComment(postId, content)
+      const result = await createComment(postId, content, parentId)
       if (!result.error) {
         setContent('')
+        onSuccess?.()
         router.refresh()
       }
     })

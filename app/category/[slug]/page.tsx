@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getCategoryBySlug } from '@/app/actions/categories'
-import { getPublishedPosts } from '@/app/actions/posts'
+import { getPosts } from '@/app/actions/posts'
 import { PostCard } from '@/components/PostCard'
 
 interface CategoryPageProps {
@@ -15,7 +15,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     notFound()
   }
 
-  const { posts } = await getPublishedPosts(1, 12, slug)
+  // Fetch first page of published posts (12 items) for this category
+  const posts = await getPosts(12, 0, category.id)
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">

@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { getPublishedPosts } from '@/app/actions/posts'
 import { PostCard } from '@/components/PostCard'
 
 interface TagPageProps {
